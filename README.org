@@ -1,0 +1,6 @@
+#+title: syncthing.el
+
+This Emacs package provides functions for interacting with Syncthing.
+
+* Sync conflicts
+  Use `syncthing|ediff` to find files in the current directory which are out of sync and start an ediff to merge the out of sync version with the local version.
