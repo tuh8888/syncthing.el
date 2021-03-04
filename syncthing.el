@@ -27,37 +27,38 @@
 
 (require 'cl-lib)
 
+(defun syncthing|parent-dir (file)
+  (file-name-directory (directory-file-name file)))
+
 (defun syncthing|parent-dir-files (file)
-  (directory-files (file-name-directory (directory-file-name file)) t))
+  (directory-files (syncthing|parent-dir file) t))
+
+(defun syncthing|conflicting-file-p (file)
+  (cl-search "sync-conflict" file))
 
 (defun syncthing|all-sync-conflicts (file)
-  (remove-if-not (lambda (file)
-                   (cl-search "sync-conflict" file))
-                 (syncthing|parent-dir-files file)))
+  (remove-if-not #'syncthing|conflicting-file-p (syncthing|parent-dir-files file)))
+
+(defun syncthing|local-file-p (file conflicting-file)
+  (let ((file-name (file-name-base file)))
+    (and (not (or (equal conflicting-file file)
+                  (equal file-name ".")
+                  (equal file-name "..")))
+         (when-let ((idx (cl-search file-name conflicting-file)))
+           (= (+ 1 idx (length file-name))
+              (cl-search "sync-conflict" conflicting-file))))))
 
 (defun syncthing|local-file (conflicting-file)
   (first (remove-if-not (lambda (file)
-                          (let ((file-name (file-name-base file)))
-                            (and (not (or (equal conflicting-file file)
-                                          (equal file-name ".")
-                                          (equal file-name "..")))
-                                 (cl-search file-name conflicting-file)
-                                 (= (+ 1
-                                       (cl-search file-name conflicting-file)
-                                       (length file-name))
-                                    (cl-search "sync-conflict" conflicting-file)))))
+                          (syncthing|local-file-p file conflicting-file))
                         (syncthing|parent-dir-files conflicting-file))))
-(let ((file-name "refile"))
-)
 
 (defun syncthing|ediff (conflicting-file)
-  (interactive (list (read-file-name "File: "
-                                     (file-name-directory (directory-file-name (buffer-file-name)))
-                                     nil
-                                     t
-                                     nil
-                                     (lambda (file)
-                                       (cl-search "sync-conflict" file)))))
+  (interactive
+   (let ((dir (if (eq major-mode 'dired-mode)
+                  (dired-current-directory)
+                default-directory)))
+     (list (read-file-name "File: " dir nil t nil #'syncthing|conflicting-file-p))))
   (ediff (syncthing|local-file conflicting-file) conflicting-file))
 
 (provide 'syncthing)
