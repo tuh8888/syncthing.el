@@ -28,13 +28,13 @@
 (require 'cl-lib)
 
 (defun syncthing|parent-dir (file)
-  (file-name-directory (directory-file-name file)))
+  (file-name-directory (directory-file-name (expand-file-name file))))
 
 (defun syncthing|parent-dir-files (file)
   (directory-files (syncthing|parent-dir file) t))
 
 (defun syncthing|conflicting-file-p (file)
-  (cl-search "sync-conflict" file))
+  (cl-search "conflict" file))
 
 (defun syncthing|all-sync-conflicts (file)
   (remove-if-not #'syncthing|conflicting-file-p (syncthing|parent-dir-files file)))
@@ -45,8 +45,10 @@
                   (equal file-name ".")
                   (equal file-name "..")))
          (when-let ((idx (cl-search file-name conflicting-file)))
-           (= (+ 1 idx (length file-name))
-              (cl-search "sync-conflict" conflicting-file))))))
+           (or (= (+ 6 idx (length file-name))
+                  (cl-search "conflict" conflicting-file))
+               (= (+ 25 idx (length file-name))
+                  (cl-search "conflict" conflicting-file)))))))
 
 (defun syncthing|local-file (conflicting-file)
   (first (remove-if-not (lambda (file)
