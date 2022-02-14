@@ -1,3 +1,7 @@
+* Archive Warning
+
+  This project is no longer being maintained. Please consider using [[https://github.com/ibizaman/emacs-conflict][emacs-conflict]] which is a more general package for working with syncing conflicts, especially Syncthing.
+
 * syncthing.el
 
 This Emacs package provides functions for interacting with Syncthing.
